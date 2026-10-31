@@ -29,3 +29,8 @@ def test_metrics_endpoint():
     r = client.get("/metrics")
     assert r.status_code == 200
     assert "api_requests_total" in r.text
+
+def test_ping():
+    r = client.get("/ping")
+    assert r.status_code == 200
+    assert r.json() == {"message": "pong"}
