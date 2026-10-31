@@ -6,3 +6,9 @@ image:
 ingress:
   enabled: true
   host: dev.4.188.119.141.nip.io
+
+serviceMonitor:
+  enabled: true
+
+prometheusRule:
+  enabled: true

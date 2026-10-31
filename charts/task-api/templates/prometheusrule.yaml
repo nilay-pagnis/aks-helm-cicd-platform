@@ -1,0 +1,27 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "task-api.fullname" . }}
+  labels:
+    {{- include "task-api.labels" . | nindent 4 }}
+    release: monitoring
+spec:
+  groups:
+    - name: task-api.rules
+      rules:
+        - alert: TaskApiNoAvailableReplicas
+          expr: kube_deployment_status_replicas_available{namespace="{{ .Release.Namespace }}", deployment="{{ include "task-api.fullname" . }}"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "task-api has no available replicas in {{ .Release.Namespace }}"
+        - alert: TaskApiPodRestarting
+          expr: increase(kube_pod_container_status_restarts_total{namespace="{{ .Release.Namespace }}", pod=~"{{ include "task-api.fullname" . }}-.*"}[15m]) > 2
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "task-api pods restarting in {{ .Release.Namespace }}"
+{{- end }}
