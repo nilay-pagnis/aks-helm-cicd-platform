@@ -88,3 +88,33 @@ jobs:
           IMAGE=${{ vars.ACR_NAME }}.azurecr.io/$IMAGE_NAME:$TAG
           docker tag $IMAGE_NAME:$TAG $IMAGE
           docker push $IMAGE
+
+  update-dev-tag:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        run: echo "TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - name: Update dev image tag
+        run: |
+          sed -i "s|^  tag: \".*\"|  tag: \"$TAG\"|" charts/task-api/values-dev.yaml
+          grep -n "tag:" charts/task-api/values-dev.yaml
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo "Tag already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add charts/task-api/values-dev.yaml
+          git commit -m "chore(dev): deploy image $TAG [skip ci]"
+          git pull --rebase origin main
+          git push
