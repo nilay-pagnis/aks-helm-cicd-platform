@@ -5,6 +5,7 @@ image:
 
 ingress:
   enabled: true
+  host: prod.4.188.119.141.nip.io
 
 autoscaling:
   enabled: true
