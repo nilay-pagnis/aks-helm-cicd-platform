@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: acrplaceholder.azurecr.io/task-api
+  repository: acrtaskapi27cdca.azurecr.io/task-api
   tag: "0.0.0"
   pullPolicy: IfNotPresent
 
