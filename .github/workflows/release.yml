@@ -1,0 +1,48 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Read image tag running in dev
+        run: |
+          TAG=$(grep -E '^\s+tag:' charts/task-api/values-dev.yaml | sed -E 's/.*"(.*)".*/\1/')
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Promoting image tag: $TAG"
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Verify image exists in ACR
+        run: az acr repository show --name ${{ vars.ACR_NAME }} --image task-api:$TAG
+
+      - name: Update prod image tag
+        run: |
+          sed -i "s|^  tag: \".*\"|  tag: \"$TAG\"|" charts/task-api/values-prod.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add charts/task-api/values-prod.yaml
+          git diff --cached --quiet && echo "Prod already on $TAG" && exit 0
+          git commit -m "chore(prod): release ${{ github.ref_name }} with image $TAG [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
