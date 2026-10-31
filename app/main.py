@@ -50,3 +50,8 @@ def get_task(task_id: int):
 @app.get("/metrics")
 def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+@app.get("/ping")
+def ping():
+    REQUESTS.labels(endpoint="/ping").inc()
+    return {"message": "pong"}
